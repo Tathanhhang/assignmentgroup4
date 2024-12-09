@@ -275,7 +275,11 @@ int main() {
     // Giải phóng bộ nhớ
     freeMenu(menu);
     freeTables(tables);
+<<<<<<< HEAD
     cout<<"hello"<<endl;
 
+=======
+	
+>>>>>>> 57ed40bbd73426d144fba9d91fd5471ab72b2b0e
     return 0;
 }
