@@ -275,7 +275,6 @@ int main() {
     // Giải phóng bộ nhớ
     freeMenu(menu);
     freeTables(tables);
-	cout <<"hello"<<endl;
-
+	
     return 0;
 }
