@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include<iostream>
+using namespace std;
 // Cấu trúc lưu món ăn trong menu
 typedef struct MenuItem {
     int id;
@@ -20,8 +20,9 @@ typedef struct Order {
 // Cấu trúc lưu bàn và các đơn hàng
 typedef struct Table {
     int tableNumber;
-    Order* orders;
+    Order** orders;
     struct Table* next;
+    int check;
 } Table;
 
 // Hàm thêm món ăn vào danh sách menu
@@ -66,12 +67,12 @@ void displayMenu(MenuItem* head) {
     printf("================\n");
 }
 
-// Thêm món vào danh sách đơn hàng
-Order* addOrderItem(Order* head, int id, int quantity) {
-    Order* newOrder = (Order*)malloc(sizeof(Order));
+// Tao mot mon moi trong don hang cua khach
+Order* makeOrderItem(int id, int quantity) {
+    Order* newOrder = new Order();
     newOrder->id = id;
     newOrder->quantity = quantity;
-    newOrder->next = head;
+    newOrder->next = NULL;
     return newOrder;
 }
 
@@ -80,80 +81,72 @@ Table* findTable(Table* head, int tableNumber) {
     Table* current = head;
     while (current != NULL) {
         if (current->tableNumber == tableNumber) {
-            return current;
+            if (current->check == 1) continue;
+            else {
+                current->check = 1;
+                return current;
         }
         current = current->next;
     }
     return NULL;
 }
 
-// Thêm bàn mới vào danh sách
-Table* addTable(Table* head, int tableNumber) {
-    Table* newTable = (Table*)malloc(sizeof(Table));
-    newTable->tableNumber = tableNumber;
-    newTable->orders = NULL;
-    newTable->next = head;
-    return newTable;
-}
+
 
 // Ghi nhận đơn hàng cho bàn
-void takeOrderForTable(Table* table, MenuItem* menu) {
-    int id, quantity;
-
-    printf("Nhập ID món ăn (0 để kết thúc): ");
-    while (scanf("%d", &id) && id != 0) {
-        // Kiểm tra món có trong menu hay không
-        MenuItem* currentMenu = menu;
-        int valid = 0;
-        while (currentMenu != NULL) {
-            if (currentMenu->id == id) {
-                valid = 1;
-                break;
-            }
-            currentMenu = currentMenu->next;
-        }
-        if (!valid) {
-            printf("Món ăn không có trong menu!\n");
-            continue;
-        }
-
-        printf("Nhập số lượng: ");
-        scanf("%d", &quantity);
-        table->orders = addOrderItem(table->orders, id, quantity);
-        printf("Đã thêm món!\n");
-
-        printf("Nhập ID món ăn (0 để kết thúc): ");
+void takeOrderForTable(Table* table) {
+    if (table->check == 0) {
+        cout << "Ban trong" << endl;
+        return;
     }
+    while(1){
+        cout << "bam phim 1 de goi them mon an, bam phim 0 neu nguoc lai: " << endl;
+        int luachon;
+        cin >> luachon;
+        if (luachon == 0) break;
+        else{
+            cout << "Nhap id mon an: ";
+            int id; cin >> id;
+            cout << "so luong: ";
+            int quantity;cin >> quantity;
+            Order* Neworder = makeOrderItem(id, quantity);
+            Oder* temp = *(table->orders);
+            if (temp == NULL) {
+                temp = Neworder;
+            }
+            else {
+                Neworder->next = temp;
+            }
 }
 
 // Tính hóa đơn cho bàn
-void calculateBill(MenuItem* menuHead, Table* table) {
-    if (!table->orders) {
-        printf("Bàn %d chưa gọi món!\n", table->tableNumber);
+int calculateBill(Table* table, MenuItem* menu) {
+    if (!table->check) {
+        cout << "Ban" << table->tableNumber << "trong" << endl;
         return;
     }
-
-    int total = 0;
-    printf("\n===== HÓA ĐƠN BÀN %d =====\n", table->tableNumber);
-    Order* orderCurrent = table->orders;
-
-    while (orderCurrent != NULL) {
-        MenuItem* menuCurrent = menuHead;
-        while (menuCurrent != NULL) {
-            if (menuCurrent->id == orderCurrent->id) {
-                int cost = orderCurrent->quantity * menuCurrent->price;
-                total += cost;
-                printf("%s x %d = %d VND\n", menuCurrent->name, orderCurrent->quantity, cost);
+    int sum = 0;
+    cout << "Hoa don ban so: " << table -> tableNumber << endl;
+    // hien thi danh sach mon an ma ban do da dat
+    Order* temp1 = *(table->orders);
+    while (temp1 != NULL) {
+        MenuItem* temp2 = menu;
+        while (temp2 != NULL) {
+            if (temp1->id == temp2->id) {
+                cout << "temp2->name" << 't' << "soluong:" << temp1->quantity << 't' << "gia tien:" << (temp2->price) * (temp1->quantity) << endl;
+                sum += (temp2->price) * (temp1->quantity);
                 break;
             }
-            menuCurrent = menuCurrent->next;
+            temp2 = temp2->next;
         }
-        orderCurrent = orderCurrent->next;
+        temp1 = temp1->next;
     }
-    printf("Tổng cộng: %d VND\n", total);
-    printf("===================\n");
+    return sum;
 }
+// Thanh toan khi khach hang mua online
 
+// Tinh doanh thu
+ 
 // Giải phóng bộ nhớ danh sách liên kết
 void freeMenu(MenuItem* head) {
     while (head != NULL) {
@@ -211,12 +204,12 @@ int main() {
         scanf("%d", &choice);
 
         switch (choice) {
-        case 1:{
-        	displayMenu(menu);
-			break;
-		}
-        case 2:{
-        	printf("Nhập số bàn: ");
+        case 1: {
+            displayMenu(menu);
+            break;
+        }
+        case 2: {
+            printf("Nhập số bàn: ");
             scanf("%d", &tableNumber);
             if (findTable(tables, tableNumber)) {
                 printf("Bàn %d đã được đặt!\n", tableNumber);
@@ -225,11 +218,11 @@ int main() {
                 tables = addTable(tables, tableNumber);
                 printf("Đặt bàn %d thành công!\n", tableNumber);
             }
-			break;
-		}
-            
-        case 3:{
-        	printf("Nhập số bàn: ");
+            break;
+        }
+
+        case 3: {
+            printf("Nhập số bàn: ");
             scanf("%d", &tableNumber);
             Table* table = findTable(tables, tableNumber);
             if (table) {
@@ -238,12 +231,12 @@ int main() {
             else {
                 printf("Bàn %d chưa được đặt!\n", tableNumber);
             }
-            
-			break;
-		}
-            
-        case 4:{
-        	printf("Nhập số bàn: ");
+
+            break;
+        }
+
+        case 4: {
+            printf("Nhập số bàn: ");
             scanf("%d", &tableNumber);
             Table* billingTable = findTable(tables, tableNumber);
             if (billingTable) {
@@ -252,21 +245,21 @@ int main() {
             else {
                 printf("Bàn %d chưa được đặt!\n", tableNumber);
             }
-            
-			break;
-		}
-            
+
+            break;
+        }
+
         case 5:
-            {
-            	getFeedback();
-            	break;
-			}
-            
-        case 6:{
-        	 printf("Cảm ơn bạn đã sử dụng hệ thống!\n");
-			break;
-		}
-           
+        {
+            getFeedback();
+            break;
+        }
+
+        case 6: {
+            printf("Cảm ơn bạn đã sử dụng hệ thống!\n");
+            break;
+        }
+
         default:
             printf("Lựa chọn không hợp lệ!\n");
         }
@@ -276,7 +269,7 @@ int main() {
     freeMenu(menu);
     freeTables(tables);
 
-	
+
 
     return 0;
 }
