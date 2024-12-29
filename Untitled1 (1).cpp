@@ -55,6 +55,23 @@ void displayMenu(struct MenuItem* head) {
     printf("================\n");
 }
 
+// Ham tai menu tu file
+void loadMenuFromFile(struct MenuItem** menu, const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Khong the mo file!\n");
+        return;
+    }
+
+    int id, price;
+    char name[100];
+    while (fscanf(file, "%d, %99[^,], %d\n", &id, name, &price) != EOF) {
+        addMenuItem(menu, id, name, price);
+    }
+
+    fclose(file);
+}
+
 // Tao mon moi trong don hang cua khach
 struct Order* makeOrderItem(int id, int quantity) {
     struct Order* newOrder = (struct Order*)malloc(sizeof(struct Order));
@@ -91,7 +108,7 @@ int findTable(struct Table* tablelist, int tableNumber) {
     while (current != NULL) {
         if (current->tableNumber == tableNumber) {
             if (current->check == 1) {
-                current->check = 0;  // Danh dau ban da chiem
+                current->check = 0;  // Dang dau ban da chiem
                 return 1;  // Ban co san va da chiem
             }
             else {
@@ -138,11 +155,22 @@ void freeMenu(struct MenuItem* head) {
     }
 }
 
+// Giai phong bo nho danh sach lien ket cua don hang
 void freeOrders(struct Order* head) {
     while (head != NULL) {
         struct Order* temp = head;
         head = head->next;
-        free(temp);
+        free(temp);  // Giai phong tung phan tu trong danh sach don Order
+    }
+}
+
+// Giai phong bo nho danh sach lien ket cua ban
+void freeTables(struct Table* head) {
+    while (head != NULL) {
+        struct Table* temp = head;
+        freeOrders(head->orders);  // Giai phong cac don hang truoc khi giai phong ban
+        head = head->next;
+        free(temp);  // Giai phong ban
     }
 }
 
@@ -170,7 +198,7 @@ void calculateBill(struct Table* table, struct Revenue** RevenueList, struct Men
         currentItemBill = currentItemBill->next;
     }
     printf("Tong: %d\n", totalprice);
-    table->check = 1;  // Danh dau ban co san
+    table->check = 1;  // Dang dau ban co san
     freeOrders(table->orders);
     table->orders = NULL;  // Reset don hang sau thanh toan
 
@@ -198,9 +226,9 @@ void calculateRevenue(struct Revenue* RevenueList) {
     int endDay, endMonth, endYear;
 
     // Nhap ngay bat dau va ngay ket thuc
-    printf("Nhap ngay bat dau (dd mm yyyy): "); 
+    printf("Nhap ngay bat dau (dd mm yyyy): ");
     scanf("%d %d %d", &startDay, &startMonth, &startYear);
-    printf("Nhap ngay ket thuc (dd mm yyyy): "); 
+    printf("Nhap ngay ket thuc (dd mm yyyy): ");
     scanf("%d %d %d", &endDay, &endMonth, &endYear);
 
     int totalRevenue = 0;
@@ -208,14 +236,14 @@ void calculateRevenue(struct Revenue* RevenueList) {
     // Duyet qua danh sach doanh thu
     struct Revenue* current = RevenueList;
     while (current != NULL) {
-        // Kiem tra neu ngay cua muc hien tai nam trong khoang thoi gian yeu cau
+        // Kiem tra neu ngay cua moc hien tai nam trong khoang thoi gian yeu cau
         if ((current->year > startYear || (current->year == startYear && current->month > startMonth) || 
             (current->year == startYear && current->month == startMonth && current->day >= startDay)) &&
             (current->year < endYear || (current->year == endYear && current->month < endMonth) || 
             (current->year == endYear && current->month == endMonth && current->day <= endDay))) {
-            totalRevenue += current->revenueinday;  // Cong don doanh thu
+            totalRevenue += current->revenueinday;  // Cong den doanh thu
         }
-        current = current->next;  // Chuyen sang muc tiep theo trong danh sach
+        current = current->next;  // Chuyen sang moc tiep theo trong danh sach
     }
 
     // In ra tong doanh thu
@@ -225,8 +253,8 @@ void calculateRevenue(struct Revenue* RevenueList) {
 // Ghi nhan phan hoi cua khach hang
 void getFeedback() {
     char feedback[255];
-    printf("\Nhap phan hoi cua ban: ");
-    getchar(); 
+    printf("\n Nhap phan hoi cua ban: ");
+    getchar();  // De loi bo ky tu '\n' du tha sau khi nhap so
     fgets(feedback, sizeof(feedback), stdin);
 
     printf("Cam on phan hoi cua ban");
@@ -236,21 +264,9 @@ int main() {
     struct MenuItem* menu = NULL;
     struct Table* tables = NULL;
     int quantity;
-    printf("Nhap so luong mon an trong menu: ");
-    scanf("%d", &quantity);
-    getchar();  // De xu ly cho getchar sau khi nhap so
-    while (quantity--) {
-        int id, price;
-        char name[100];
-        printf("Nhap ten mon: "); 
-        fgets(name, sizeof(name), stdin);  // Doc ten mon an voi dau cach
-        name[strcspn(name, "\n")] = '\0';  // Loai bo dau '\n' o cuoi ten mon an
-        printf("Nhap id mon: "); scanf("%d", &id);
-        printf("Nhap gia tien: "); scanf("%d", &price);
-        getchar();  // De xu ly cho getchar sau khi nhap so
-        addMenuItem(&menu, id, name, price);
-    }
 
+    // Tai menu tu file
+    loadMenuFromFile(&menu, "menu.txt");
     int NumberOfTables;
     printf("Nhap so luong ban: ");
     scanf("%d", &NumberOfTables);
@@ -273,6 +289,7 @@ int main() {
         printf("7. Thoat\n");
         printf("Lua chon cua ban: ");
         scanf("%d", &choice);
+        while(getchar() != '\n');  // Loi bo ky tu du tha trong bo dem sau khi nhap lua chon
 
         switch (choice) {
         case 1: {
@@ -282,6 +299,7 @@ int main() {
         case 2: {
             printf("Nhap so ban: ");
             scanf("%d", &tableNumber);
+            while(getchar() != '\n');
             if (findTable(tables, tableNumber)) {
                 printf("Dat ban thanh cong!\n");
             }
@@ -293,6 +311,7 @@ int main() {
         case 3: {
             printf("Nhap so ban: ");
             scanf("%d", &tableNumber);
+            while(getchar() != '\n');
             struct Table* currentTable = tables;
             while (currentTable != NULL) {
                 if (currentTable->tableNumber == tableNumber) {
@@ -306,6 +325,7 @@ int main() {
         case 4: {
             printf("Nhap so ban: ");
             scanf("%d", &tableNumber);
+            while(getchar() != '\n');
             struct Table* currentTable = tables;
             while (currentTable != NULL) {
                 if (currentTable->tableNumber == tableNumber) {
@@ -335,6 +355,7 @@ int main() {
 
     // Giai phong bo nho
     freeMenu(menu);
+    freeTables(tables);  // Goi freeTables thay ve freeOrders o day
     return 0;
 }
 
